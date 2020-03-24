@@ -7,13 +7,13 @@ class PrevisaoDoTempo:
 		self.previsao = ""
 		self.nome_da_cidade = nome_da_cidade
 
-	def obter_codigo_da_cidade( self ):
+	def __obter_codigo_da_cidade( self ):
 
 		retorno_requisicao = requests.get( "http://servicos.cptec.inpe.br/XML/listaCidades", { "city":  self.nome_da_cidade } )
 		
 		if retorno_requisicao.status_code == 200:
 
-			IF not "<id>" in retorno_requisicao.text:
+			if not "<id>" in retorno_requisicao.text:
 				print( "Nome da cidade nao encontrado!" )
 				return None
 
@@ -23,49 +23,50 @@ class PrevisaoDoTempo:
 
 			return codigo_da_cidade
 
-	def obter_previsao_por_cidade( self ):
+	def __obter_previsao_por_cidade( self ):
 
 		codigo_da_cidade = self.obter_codigo_da_cidade()
 
-		IF codigo_da_cidade:
+		if codigo_da_cidade:
 
 			retorno_requisicao = requests.get( "http://servicos.cptec.inpe.br/XML/cidade/7dias/" + codigo_da_cidade + "/previsao.xml" )
 
-			return xml.dom.minidom.parseString( retorno_requisicao.text )
+			if not "<previsao>" in retorno_requisicao.text:
+				print( "Falha ao obter a previsão!" )
+				return None
 
+			return retorno_requisicao.text
 
-	def exibir_previsao_por_cidade( nome_da_cidade ) CLASS previsao_do_tempo:
+	def exibir_previsao_por_cidade( self ):
+		
+		previsao_txt = self.obter_previsao_por_cidade()
+		
+		if previsao_txt
+			xml_dom = xml.dom.minidom.parseString( previsao_txt )
 
-		LOCAL previsao_xml := ::obter_previsao_por_cidade( nome_da_cidade )
-		LOCAL xml_dom := win_OleCreateObject( "MSXML2.DOMDocument.6.0" )
-		LOCAL cidade, uf, atualizacao, lista_de_previsoes, previsao, previsao_filhos, elemento
-		LOCAL cabecalho := "|", tupla := "|"
+			cidade = xml_dom.getElementsByTagName("nome")[0].firstChild.data
 
-		IF !Empty( previsao_xml )
+			uf = xml_dom.getElementsByTagName("uf")[0].firstChild.data
 
-			xml_dom:loadXML( previsao_xml )
-			cidade := xml_dom:selectSingleNode( "//nome" ):text
-			uf := xml_dom:selectSingleNode( "//uf" ):text
-			atualizacao := xml_dom:selectSingleNode( "//atualizacao" ):text
+			atualizacao = xml_dom.getElementsByTagName("atualizacao")[0].firstChild.data
 
-			? "Previsao do tempo para " + cidade + " - " + uf
-			? "Atualizada em " + DToC( SToD( StrTran( atualizacao, "-" ) ) )
-			?
+			print( "Previsao do tempo para " + cidade + " - " + uf )
+			print( "Atualizada em " + "{}/{}/{}".format( atualizacao[8:10], atualizacao[5:7], atualizacao[0:4] ) )
 
-			lista_de_previsoes := xml_dom:getElementsByTagName( "previsao" )
+			lista_de_previsoes := xml_dom.getElementsByTagName( "previsao" )
 
-			FOR EACH elemento IN lista_de_previsoes:item(0):childNodes
-				IF elemento:tagName $ "dia"
-					cabecalho += PadC(elemento:tagName, 12 ) + "|"
-				ELSEIF elemento:tagName $ "tempo"
-					cabecalho += PadC(elemento:tagName, 36 ) + "|"
-				ELSE
-					cabecalho += PadC(elemento:tagName, 8 ) + "|"
-				ENDIF
-			NEXT
-			? "+" + Replicate("-",76) + "+"
-			? cabecalho
-			? "|" + Replicate("-",12) + "|" + Replicate("-",36) + "|" + Replicate("-",8) + "|" + Replicate("-",8) + "|" + Replicate("-",8) + "|"
+			cabecalho = "|", tupla = "|"
+			for elemento in lista_de_previsoes
+				if elemento.tagName == "dia"
+					cabecalho += elemento:tagName.center(12) + "|"
+				elif elemento.tagName == "tempo"
+					cabecalho += elemento:tagName.center(36) + "|"
+				else
+					cabecalho += elemento.tagName.center(8) + "|"
+			
+			print( "+" + ("-" * 76) + "+" )
+			print( cabecalho )
+			print( "|" + ("-" * 12) + "|" + ("-" * 36) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" )
 
 			FOR EACH previsao IN lista_de_previsoes
 				IF previsao:hasChildNodes()
@@ -86,7 +87,7 @@ class PrevisaoDoTempo:
 			NEXT
 		ENDIF
 
-METHOD converter_sigla_em_previsao( sigla ) CLASS previsao_do_tempo
+METHOD __converter_sigla_em_previsao( sigla ) CLASS previsao_do_tempo
 
 	LOCAL previsao
 
