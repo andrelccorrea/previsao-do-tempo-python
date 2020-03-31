@@ -16,3 +16,6 @@ def obter_codigo_da_cidade(nome_da_cidade):
         codigo_da_cidade = documento_xml.getElementsByTagName("id")[0].firstChild.data
 
         return codigo_da_cidade
+
+def formatar_data(data_nao_formatada):
+    return "{}/{}/{}".format(data_nao_formatada[8:10], data_nao_formatada[5:7], data_nao_formatada[0:4])
