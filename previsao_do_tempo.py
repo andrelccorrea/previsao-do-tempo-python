@@ -1,38 +1,86 @@
 import requests
-from uteis import obter_codigo_da_cidade
+import xml.dom.minidom as minidom
 
 class PrevisaoDoTempo:
 
     def __init__(self, nome_da_cidade):
-        self._previsao = ""
-        self._nome_da_cidade = nome_da_cidade
-        self._codigo_da_cidade = obter_codigo_da_cidade(self._nome_da_cidade)
 
+        self._nome_da_cidade = nome_da_cidade
+        self._codigo_da_cidade = self._obter_codigo_da_cidade()
+        self._link_previsao = "http://servicos.cptec.inpe.br/XML/cidade/7dias/" + self._codigo_da_cidade + "/previsao.xml"
+        self._link_previsao_estendida = "http://servicos.cptec.inpe.br/XML/cidade/" + self._codigo_da_cidade + "/estendida.xml"
+
+    # previsão para os próximos 7 dias
     def _obter_previsao(self):
 
         if self._codigo_da_cidade:
 
-            retorno_requisicao = requests.get("http://servicos.cptec.inpe.br/XML/cidade/7dias/" + self._codigo_da_cidade + "/previsao.xml")
+            retorno_requisicao = requests.get(self._link_previsao)
 
             if not "<previsao>" in retorno_requisicao.text:
                 print("Falha ao obter a previsão!")
                 return ""
 
-            return retorno_requisicao.text
+            return minidom.parseString(retorno_requisicao.text)
 
+    # previsão para os 7 dias posteriores aos próximos 7 dias
     def _obter_previsao_estendida(self):
 
         if self._codigo_da_cidade:
 
-            retorno_requisicao = requests.get("http://servicos.cptec.inpe.br/XML/cidade/" + self._codigo_da_cidade + "/estendida.xml")
+            retorno_requisicao = requests.get(self._link_previsao_estendida)
 
             if not "<previsao>" in retorno_requisicao.text:
                 print("Falha ao obter a previsão!")
                 return ""
 
-            return retorno_requisicao.text
+            return minidom.parseString(retorno_requisicao.text)
 
+    # recebe o nome ou parte do nome de uma cidade e retorna o código usado nas consultas
+    def _obter_codigo_da_cidade(self):
 
+        retorno_requisicao = requests.get("http://servicos.cptec.inpe.br/XML/listaCidades", {"city":  self._nome_da_cidade})
+
+        if retorno_requisicao.status_code == 200:
+
+            if not "<id>" in retorno_requisicao.text:
+                print("Nome da cidade nao encontrado!")
+                return ""
+
+            documento_xml = minidom.parseString(retorno_requisicao.text)
+
+            codigo_da_cidade = documento_xml.getElementsByTagName("id")[0].firstChild.data
+
+            return codigo_da_cidade
+
+    # recebe a previsao em XML e retorna formatada como Dicionário
+    def converter_previsao_em_dicionario(self, previsao_xml):
+        
+        if previsao_xml:
+
+            # cria o dicionário
+            previsao_dict = {}
+
+            # dados iniciais
+            previsao_dict["cidade"] = previsao_xml.getElementsByTagName("nome")[0].firstChild.data
+            previsao_dict["uf"] = previsao_xml.getElementsByTagName("uf")[0].firstChild.data
+            previsao_dict["atualizacao"] = previsao_xml.getElementsByTagName("atualizacao")[0].firstChild.data
+
+            # obtém os elementos "previsao"
+            lista_de_previsoes = previsao_xml.getElementsByTagName("previsao")
+
+            # extrai os dados, separando cada previsão em um dicionário numerado a partir de 1
+            contador = 1
+            for previsao in lista_de_previsoes:
+                if previsao.hasChildNodes():
+                    previsao_filhos = previsao.childNodes
+                    previsao_dict[contador] = {}
+                    for elemento in previsao_filhos:
+                        previsao_dict[contador][elemento.tagName] = elemento.firstChild.data
+                    contador += 1
+            return previsao_dict
+
+    # converte as siglas retornadas em previsao completa
     def _converter_sigla_em_previsao(self, sigla):
 
         previsao = {

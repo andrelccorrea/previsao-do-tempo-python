@@ -1,4 +1,3 @@
-import xml.dom.minidom
 from previsao_do_tempo import PrevisaoDoTempo
 import uteis
 
@@ -8,29 +7,27 @@ class ViewPrevisaoDoTempo:
         self.previsao_do_tempo = PrevisaoDoTempo(nome_da_cidade)
 
     def exibir_previsao(self):
-        
-        previsao_txt = self.previsao_do_tempo._obter_previsao()
-        self.processar_previsao(previsao_txt)
+        previsao_xml = self.previsao_do_tempo._obter_previsao()
+        self.exibir_no_terminal(previsao_xml)
 
     def exibir_previsao_estendida(self):
-        previsao_txt = self.previsao_do_tempo._obter_previsao_estendida()
-        self.processar_previsao(previsao_txt)
+        previsao_xml = self.previsao_do_tempo._obter_previsao_estendida()
+        self.exibir_no_terminal(previsao_xml)
 
-    def processar_previsao(self, previsao_txt):
+    def exibir_no_terminal(self, previsao_xml):
 
-        if previsao_txt:
-            xml_dom = xml.dom.minidom.parseString(previsao_txt)
+        if previsao_xml:
 
-            cidade = xml_dom.getElementsByTagName("nome")[0].firstChild.data
+            cidade = previsao_xml.getElementsByTagName("nome")[0].firstChild.data
 
-            uf = xml_dom.getElementsByTagName("uf")[0].firstChild.data
+            uf = previsao_xml.getElementsByTagName("uf")[0].firstChild.data
 
-            atualizacao = xml_dom.getElementsByTagName("atualizacao")[0].firstChild.data
+            atualizacao = previsao_xml.getElementsByTagName("atualizacao")[0].firstChild.data
 
             print("Previsao do tempo para " + cidade + " - " + uf)
             print("Atualizada em " + uteis.formatar_data(atualizacao))
 
-            lista_de_previsoes = xml_dom.getElementsByTagName("previsao")
+            lista_de_previsoes = previsao_xml.getElementsByTagName("previsao")
 
             cabecalho = "|"
             tupla = "|"
