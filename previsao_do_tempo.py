@@ -1,12 +1,14 @@
 import requests
 import xml.dom.minidom as minidom
 
-class PrevisaoDoTempo:
+from previsao import Previsao
+import uteis
+
+class PrevisaoDoTempo(Previsao):
 
     def __init__(self, nome_da_cidade):
 
-        self._nome_da_cidade = nome_da_cidade
-        self._codigo_da_cidade = self._obter_codigo_da_cidade()
+        self._codigo_da_cidade = self.obter_codigo_da_cidade(nome_da_cidade)
         self._link_previsao = "http://servicos.cptec.inpe.br/XML/cidade/7dias/" + self._codigo_da_cidade + "/previsao.xml"
         self._link_previsao_estendida = "http://servicos.cptec.inpe.br/XML/cidade/" + self._codigo_da_cidade + "/estendida.xml"
 
@@ -36,25 +38,48 @@ class PrevisaoDoTempo:
 
             return minidom.parseString(retorno_requisicao.text)
 
-    # recebe o nome ou parte do nome de uma cidade e retorna o código usado nas consultas
-    def _obter_codigo_da_cidade(self):
+    def _retornar_previsao_formatada(self, previsao_xml):
+        cidade = previsao_xml.getElementsByTagName("nome")[0].firstChild.data
+        uf = previsao_xml.getElementsByTagName("uf")[0].firstChild.data
+        atualizacao = previsao_xml.getElementsByTagName("atualizacao")[0].firstChild.data
 
-        retorno_requisicao = requests.get("http://servicos.cptec.inpe.br/XML/listaCidades", {"city":  self._nome_da_cidade})
+        texto_previsao = "Previsao do tempo para " + cidade + " - " + uf + "\r\n"
+        texto_previsao += "Atualizada em " + uteis.formatar_data(atualizacao) + "\r\n"
 
-        if retorno_requisicao.status_code == 200:
+        lista_de_previsoes = previsao_xml.getElementsByTagName("previsao")
 
-            if not "<id>" in retorno_requisicao.text:
-                print("Nome da cidade nao encontrado!")
-                return ""
+        cabecalho = "|"
+        tupla = "|"
 
-            documento_xml = minidom.parseString(retorno_requisicao.text)
+        for elemento in lista_de_previsoes.item(0).childNodes:
+            if elemento.tagName == "dia":
+                cabecalho += elemento.tagName.center(12) + "|"
+            elif elemento.tagName == "tempo":
+                cabecalho += elemento.tagName.center(36) + "|"
+            else:
+                cabecalho += elemento.tagName.center(8) + "|"
 
-            codigo_da_cidade = documento_xml.getElementsByTagName("id")[0].firstChild.data
+        texto_previsao += "+" + ("-" * 76) + "+" + "\r\n"
+        texto_previsao += cabecalho + "\r\n"
+        texto_previsao += "|" + ("-" * 12) + "|" + ("-" * 36) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" + "\r\n"
 
-            return codigo_da_cidade
+        for previsao in lista_de_previsoes:
+            if previsao.hasChildNodes():
+                previsao_filhos = previsao.childNodes
+                for elemento in previsao_filhos:
+                    if elemento.tagName == "dia":
+                        tupla += uteis.formatar_data(elemento.firstChild.data).center(12) + "|"
+                    elif elemento.tagName == "tempo":
+                        tupla += self._converter_sigla_em_previsao(elemento.firstChild.data.strip()).center(36) + "|"
+                    else:
+                        tupla += elemento.firstChild.data.center(8) + "|"
+                texto_previsao += tupla  + "\r\n"
+                texto_previsao += "|" + ("-" * 12) + "|" + ("-" * 36) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|"  + "\r\n"
+                tupla = "|"
+        return texto_previsao
 
     # recebe a previsao em XML e retorna formatada como Dicionário
-    def converter_previsao_em_dicionario(self, previsao_xml):
+    def _converter_previsao_em_dicionario(self, previsao_xml):
         
         if previsao_xml:
 
@@ -127,3 +152,9 @@ class PrevisaoDoTempo:
         }
 
         return previsao.get(sigla, "Sigla não encontrada.")
+
+    def exibir_previsao(self):
+        print( self._retornar_previsao_formatada( self._obter_previsao() ) )
+
+    def exibir_previsao_estendida(self):
+        print( self._retornar_previsao_formatada( self._obter_previsao_estendida() ) )
