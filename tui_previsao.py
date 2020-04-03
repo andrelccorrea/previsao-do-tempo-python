@@ -31,10 +31,12 @@ def menu():
             previsao.exibir_previsao(cidade)
         elif opcao == "2":
             previsao.exibir_previsao_estendida(cidade)
-    # elif opcao in "34":
-    #     previsao = PrevisaoDeOndas()
-    #     if opcao == "3":
-    #     elif opcao == "4":
+    elif opcao in "34":
+         previsao = PrevisaoDeOndas(cidade)
+         if opcao == "3":
+            previsao.exibir_previsao_do_dia()
+         elif opcao == "4":
+            previsao.exibir_previsao_da_semana()
     else:
         print("Opção inválida.")
     input("\r\nPressione qualquer tecla para continuar...")
