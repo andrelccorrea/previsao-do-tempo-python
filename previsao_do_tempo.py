@@ -1,3 +1,4 @@
+from tabulate import tabulate
 import requests
 import xml.dom.minidom as minidom
 
@@ -6,107 +7,71 @@ import uteis
 
 class PrevisaoDoTempo(Previsao):
 
-    def __init__(self, nome_da_cidade):
-
-        self._codigo_da_cidade = self.obter_codigo_da_cidade(nome_da_cidade)
-        self._link_previsao = "http://servicos.cptec.inpe.br/XML/cidade/7dias/" + self._codigo_da_cidade + "/previsao.xml"
-        self._link_previsao_estendida = "http://servicos.cptec.inpe.br/XML/cidade/" + self._codigo_da_cidade + "/estendida.xml"
-
     # previsão para os próximos 7 dias
-    def _obter_previsao(self):
+    def _obter_previsao(self, nome_da_cidade):
 
-        if self._codigo_da_cidade:
+        codigo_da_cidade = self.obter_codigo_da_cidade(nome_da_cidade)
 
-            retorno_requisicao = requests.get(self._link_previsao)
+        retorno_requisicao = requests.get("http://servicos.cptec.inpe.br/XML/cidade/7dias/" + codigo_da_cidade + "/previsao.xml")
 
-            if not "<previsao>" in retorno_requisicao.text:
-                print("Falha ao obter a previsão!")
-                return ""
+        if not "<previsao>" in retorno_requisicao.text:
+            print("Falha ao obter a previsão!")
+            return ""
 
-            return minidom.parseString(retorno_requisicao.text)
+        return minidom.parseString(retorno_requisicao.text)
 
     # previsão para os 7 dias posteriores aos próximos 7 dias
-    def _obter_previsao_estendida(self):
+    def _obter_previsao_estendida(self, nome_da_cidade):
 
-        if self._codigo_da_cidade:
+        codigo_da_cidade = self.obter_codigo_da_cidade(nome_da_cidade)
 
-            retorno_requisicao = requests.get(self._link_previsao_estendida)
+        retorno_requisicao = requests.get("http://servicos.cptec.inpe.br/XML/cidade/" + codigo_da_cidade + "/estendida.xml")
 
-            if not "<previsao>" in retorno_requisicao.text:
-                print("Falha ao obter a previsão!")
-                return ""
+        if not "<previsao>" in retorno_requisicao.text:
+            print("Falha ao obter a previsão!")
+            return ""
 
-            return minidom.parseString(retorno_requisicao.text)
+        return minidom.parseString(retorno_requisicao.text)
 
-    def _retornar_previsao_formatada(self, previsao_xml):
-        cidade = previsao_xml.getElementsByTagName("nome")[0].firstChild.data
-        uf = previsao_xml.getElementsByTagName("uf")[0].firstChild.data
-        atualizacao = previsao_xml.getElementsByTagName("atualizacao")[0].firstChild.data
-
-        texto_previsao = "Previsao do tempo para " + cidade + " - " + uf + "\r\n"
-        texto_previsao += "Atualizada em " + uteis.formatar_data(atualizacao) + "\r\n"
-
-        lista_de_previsoes = previsao_xml.getElementsByTagName("previsao")
-
-        cabecalho = "|"
-        tupla = "|"
-
-        for elemento in lista_de_previsoes.item(0).childNodes:
-            if elemento.tagName == "dia":
-                cabecalho += elemento.tagName.center(12) + "|"
-            elif elemento.tagName == "tempo":
-                cabecalho += elemento.tagName.center(36) + "|"
-            else:
-                cabecalho += elemento.tagName.center(8) + "|"
-
-        texto_previsao += "+" + ("-" * 76) + "+" + "\r\n"
-        texto_previsao += cabecalho + "\r\n"
-        texto_previsao += "|" + ("-" * 12) + "|" + ("-" * 36) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" + "\r\n"
-
-        for previsao in lista_de_previsoes:
-            if previsao.hasChildNodes():
-                previsao_filhos = previsao.childNodes
-                for elemento in previsao_filhos:
-                    if elemento.tagName == "dia":
-                        tupla += uteis.formatar_data(elemento.firstChild.data).center(12) + "|"
-                    elif elemento.tagName == "tempo":
-                        tupla += self._converter_sigla_em_previsao(elemento.firstChild.data.strip()).center(36) + "|"
-                    else:
-                        tupla += elemento.firstChild.data.center(8) + "|"
-                texto_previsao += tupla  + "\r\n"
-                texto_previsao += "|" + ("-" * 12) + "|" + ("-" * 36) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|" + ("-" * 8) + "|"  + "\r\n"
-                tupla = "|"
-        return texto_previsao
-
-    # recebe a previsao em XML e retorna formatada como Dicionário
+    # recebe a previsao em XML e retorna formatada como Dicionário para uso com "tabulate"
     def _converter_previsao_em_dicionario(self, previsao_xml):
         
+        previsao_dict = {}
+
         if previsao_xml:
 
-            # cria o dicionário
-            previsao_dict = {}
+            previsao_dict["cabecalho"] = [] 
+            previsao_dict["linhas"] = []
 
-            # dados iniciais
-            previsao_dict["cidade"] = previsao_xml.getElementsByTagName("nome")[0].firstChild.data
-            previsao_dict["uf"] = previsao_xml.getElementsByTagName("uf")[0].firstChild.data
-            previsao_dict["atualizacao"] = previsao_xml.getElementsByTagName("atualizacao")[0].firstChild.data
-
-            # obtém os elementos "previsao"
-            lista_de_previsoes = previsao_xml.getElementsByTagName("previsao")
-
-            # extrai os dados, separando cada previsão em um dicionário numerado a partir de 1
-            contador = 1
-            for previsao in lista_de_previsoes:
-                if previsao.hasChildNodes():
-                    previsao_filhos = previsao.childNodes
-                    previsao_dict[contador] = {}
-                    for elemento in previsao_filhos:
-                        previsao_dict[contador][elemento.tagName] = elemento.firstChild.data
-                    contador += 1
-            return previsao_dict
+            previsao_lista = previsao_xml.getElementsByTagName("cidade").item(0).childNodes        
+            primeira_iteracao = True
+            for previsao in previsao_lista:
+                if previsao.tagName == "nome":
+                    previsao_dict["cidade"] =  previsao.firstChild.data
+                elif previsao.tagName == "uf":
+                    previsao_dict["uf"] =  previsao.firstChild.data
+                elif previsao.tagName == "atualizacao":
+                    previsao_dict["data_da_consulta"] =  previsao.firstChild.data
+                else:
+                    if previsao.hasChildNodes():
+                        previsao_filhos = previsao.childNodes
+                        linha = []
+                        for elemento in previsao_filhos:
+                            if primeira_iteracao:
+                                previsao_dict["cabecalho"].append(elemento.tagName)
+                            if elemento.tagName == "dia":
+                                linha.append( uteis.formatar_data(elemento.firstChild.data))
+                            elif elemento.tagName == "tempo":
+                                linha.append( self._converter_sigla_da_previsao( elemento.firstChild.data ) )
+                            else:
+                                linha.append( elemento.firstChild.data )
+                        previsao_dict["linhas"].append( linha )
+                        primeira_iteracao = False
+        
+        return previsao_dict
 
     # converte as siglas retornadas em previsao completa
-    def _converter_sigla_em_previsao(self, sigla):
+    def _converter_sigla_da_previsao(self, sigla):
 
         previsao = {
             "ec": "Encoberto com Chuvas Isoladas",
@@ -153,8 +118,26 @@ class PrevisaoDoTempo(Previsao):
 
         return previsao.get(sigla, "Sigla não encontrada.")
 
-    def exibir_previsao(self):
-        print( self._retornar_previsao_formatada( self._obter_previsao() ) )
+    def exibir_previsao(self, nome_da_cidade):
+        
+        previsao_xml = self._obter_previsao(nome_da_cidade)
 
-    def exibir_previsao_estendida(self):
-        print( self._retornar_previsao_formatada( self._obter_previsao_estendida() ) )
+        if previsao_xml:    
+            previsao_dict = self._converter_previsao_em_dicionario(previsao_xml)
+
+            print("Previsao do tempo para os próximos 7 dias para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'])
+            print("Atualizada em " + uteis.formatar_data(previsao_dict['data_da_consulta']))
+            
+            print(tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho']))
+
+    def exibir_previsao_estendida(self, nome_da_cidade):
+        
+        previsao_xml = self._obter_previsao_estendida(nome_da_cidade)
+
+        if previsao_xml:    
+            previsao_dict = self._converter_previsao_em_dicionario(previsao_xml)
+
+            print("Previsao do tempo para os próximos 7 dias para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'])
+            print("Atualizada em " + previsao_dict['data_da_consulta'])
+            
+            print(tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho']))
