@@ -8,20 +8,22 @@ from previsao_de_ondas import PrevisaoDeOndas
 # classe Application é herdeira da classe tk.Frame
 class Application(tk.Frame):
     def __init__(self, master=None):
+        
         # inicializa a classe Pai (Tk.Frame) passando o container principal como argumento
         super().__init__(master)
+        
         # define o container principal para toda a aplicação
         #  quando um widget não tem o container pai definido,
         #  assume master como sendo o container principal
         self.master = master
-        # cria as variáveis
-        self.opcao = tk.StringVar()
-        self.cidade = tk.StringVar()
+        
         # título da janela
         self.master.title("Previsão do TEMPO e ONDAS - Fonte: CPTEC/INPE")
-        # cria os widgets
-        self.criar_widget_opcao()
-        self.criar_widget_cidade()
+
+        # cria os widgets e define as variaveis
+        self.opcao    = self.criar_widget_opcao()
+        self.cidade   = self.criar_widget_cidade()
+        self.previsao = self.criar_widget_previsao()
         self.criar_widget_sair()
 
     def criar_widget_opcao(self):
@@ -59,7 +61,6 @@ class Application(tk.Frame):
                    pady=5) # padding vertical
         # cria o edit
         entry = tk.Entry(self.master, #container
-                         textvariable = self.cidade,
                          width=30)    # tamanho do campo
         # define a posição do widget
         entry.grid(column=1, # posição horizontal na janela, 2a coluna
@@ -67,25 +68,45 @@ class Application(tk.Frame):
         # vincula a tecla ENTER ao método exibir_previsao
         entry.bind("<Return>", self.exibir_previsao)
 
+        return entry
+
+    def criar_widget_previsao(self):
+        # cria o label
+        label = tk.Label(self.master, # container
+                         width=70)  # largura em medida de texto)
+        # posição do label
+        label.grid(column=1,  # posição horizontal na janela, 3a coluna
+                   row=5,     # posição vertical na janela
+                   padx=5,    # padding horizontal
+                   pady=5)    # padding vertical
+
+        return label
+    
+    def exibir_previsao(self, event=None):
+        # obtém a opção do combobox
+        opcao = self.opcao.current() # current() retorna o índice
+        if opcao   == 0:
+            previsao = PrevisaoDoTempo().retornar_previsao(self.cidade.get())
+        elif opcao == 1:
+            previsao = PrevisaoDoTempo().retornar_previsao_estendida(self.cidade.get())
+        elif opcao == 2:
+            previsao = PrevisaoDeOndas(self.cidade.get()).retornar_previsao_do_dia()
+        elif opcao == 3:
+            previsao = PrevisaoDeOndas(self.cidade.get()).retornar_previsao_da_semana()
+        
+        # carrega os dados da previsão
+        self.previsao["text"] = previsao
+
     def criar_widget_sair(self):
         # cria o botão
         button = tk.Button(self.master,                 # container
                            text="Sair",                 # texto no botão 
                            command=self.master.destroy) # evento
         # posição
-        button.grid(column=5, # posição horizontal na janela, 3a coluna
-                    row=11,    # posição vertical na janela, 3a linha
+        button.grid(column=7, # posição horizontal na janela, 3a coluna
+                    row=11,   # posição vertical na janela, 3a linha
                     padx=5,   # padding horizontal
                     pady=5)   # padding vertical
-
-    def exibir_previsao(self, event=None):
-        previsao = PrevisaoDeOndas(self.cidade.get()).retornar_previsao_do_dia()
-        label = tk.Label(self.master,             # container
-                         text=previsao)  # texto do label
-        # posição do label
-        label.grid(row=4,  # posição vertical na janela
-                   padx=5, # padding horizontal
-                   pady=5) # padding vertical
 
 # cria o container principal da aplicação
 root = tk.Tk()
