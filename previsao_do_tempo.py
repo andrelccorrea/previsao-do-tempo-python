@@ -62,7 +62,7 @@ class PrevisaoDoTempo(Previsao):
                             if elemento.tagName == "dia":
                                 linha.append( uteis.formatar_data(elemento.firstChild.data))
                             elif elemento.tagName == "tempo":
-                                linha.append( self._converter_sigla_da_previsao( elemento.firstChild.data ) )
+                                linha.append( self._converter_sigla_da_previsao(elemento.firstChild.data.strip()) )
                             else:
                                 linha.append( elemento.firstChild.data )
                         previsao_dict["linhas"].append( linha )
@@ -118,26 +118,29 @@ class PrevisaoDoTempo(Previsao):
 
         return previsao.get(sigla, "Sigla não encontrada.")
 
-    def exibir_previsao(self, nome_da_cidade):
+    def retornar_previsao(self, nome_da_cidade):
         
         previsao_xml = self._obter_previsao(nome_da_cidade)
 
         if previsao_xml:    
             previsao_dict = self._converter_previsao_em_dicionario(previsao_xml)
 
-            print("Previsao do tempo para os próximos 7 dias para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'])
-            print("Atualizada em " + uteis.formatar_data(previsao_dict['data_da_consulta']))
-            
-            print(tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho']))
+            previsao = "Previsao do tempo para os próximos 7 dias para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'] + "\r\n"
+            previsao += "Atualizada em " + uteis.formatar_data(previsao_dict['data_da_consulta']) + "\r\n"
+            previsao += tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho'])
 
-    def exibir_previsao_estendida(self, nome_da_cidade):
+            return previsao
+
+    def retornar_previsao_estendida(self, nome_da_cidade):
         
         previsao_xml = self._obter_previsao_estendida(nome_da_cidade)
 
         if previsao_xml:    
             previsao_dict = self._converter_previsao_em_dicionario(previsao_xml)
 
-            print("Previsao do tempo para os próximos 7 dias para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'])
-            print("Atualizada em " + previsao_dict['data_da_consulta'])
-            
-            print(tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho']))
+            previsao = "Previsao do tempo para os 7 dias da próxima semana" + "\r\n"
+            previsao += "para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'] + "\r\n"
+            previsao += "Atualizada em " + uteis.formatar_data(previsao_dict['data_da_consulta']) + "\r\n"
+            previsao += tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho'])
+
+            return previsao

@@ -90,20 +90,21 @@ class PrevisaoDeOndas:
 
         return pontos_cardeais.get(sigla, "Sigla não encontrada.")
 
-
-    def exibir_previsao_do_dia(self):
+    def retornar_previsao_do_dia(self):
 
         previsao_xml = self._obter_previsao_do_dia()
 
         if previsao_xml:    
             previsao_dict = self._converter_previsao_em_dicionario(previsao_xml)
 
-            print("Previsao de ondas do dia para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'])
-            print("Atualizada em " + previsao_dict['atualizacao'].replace("-","/") )
+            previsao = "Previsao de ondas do dia para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'] + "\r\n"
+            previsao += "Atualizada em " + previsao_dict['atualizacao'].replace("-","/") + "\r\n"
             
-            print(tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho'], tablefmt="simple"))
+            previsao += tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho'], tablefmt="simple")
+
+            return previsao
         
-    def exibir_previsao_da_semana(self):
+    def retornar_previsao_da_semana(self):
 
         previsao_xml = self._obter_previsao_da_semana()  
 
@@ -111,7 +112,9 @@ class PrevisaoDeOndas:
 
             previsao_dict = self._converter_previsao_em_dicionario(previsao_xml)
 
-            print("Previsao de ondas da semana para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'])
-            print("Atualizada em " + uteis.formatar_data( previsao_dict['atualizacao'] ))
+            previsao = "Previsao de ondas da semana para " + previsao_dict['cidade'] + " - " + previsao_dict['uf'] + "\r\n"
+            previsao += "Atualizada em " + uteis.formatar_data( previsao_dict['atualizacao'] ) + "\r\n"
             
-            print(tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho'], tablefmt="simple"))
+            previsao += tabulate(previsao_dict['linhas'], headers=previsao_dict['cabecalho'], tablefmt="simple")
+
+            return previsao

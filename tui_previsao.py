@@ -23,20 +23,19 @@ def menu():
     if opcao in "Ss":
         return opcao
     cidade = input("Cidade: ")
-
+    limpar_tela()
     if   opcao in "12":
         previsao = PrevisaoDoTempo()
         if opcao == "1":
-            limpar_tela()
-            previsao.exibir_previsao(cidade)
+            print( previsao.retornar_previsao(cidade) )
         elif opcao == "2":
-            previsao.exibir_previsao_estendida(cidade)
+            print( previsao.retornar_previsao_estendida(cidade) )
     elif opcao in "34":
          previsao = PrevisaoDeOndas(cidade)
          if opcao == "3":
-            previsao.exibir_previsao_do_dia()
+            print( previsao.retornar_previsao_do_dia() )
          elif opcao == "4":
-            previsao.exibir_previsao_da_semana()
+            print( previsao.retornar_previsao_da_semana() )
     else:
         print("Opção inválida.")
     input("\r\nPressione qualquer tecla para continuar...")
